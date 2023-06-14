@@ -352,3 +352,72 @@ First of all we need to know that:
 - After the rule taking effect, it becomes impossible to access the facebook
 
 ![State](task3-fw/states.png)
+- This is the state recorded by the status indicator
+
+![Block now](task3-fw/block-now.png)
+- We changed the action to block
+- We will save and apply the rules as instructed
+
+![After block](task3-fw/after-block.png)
+- After the block, we got infinite loading
+- This is due to the nature of rejecting and blocking a host. Case we reject, we send an error message which in block we don't send anything, so because of that we will eventually reach connection timeout
+
+In pfsense we can limit the trafic to a single host instead of the whole network. And so it goes to ports. (comments to this)
+
+-> Advantages
+
+    - We have the possibility to be more precise to what we want the user to see or not
+    - We have more control over the network
+    - We can monitor particular trafic
+    - We can stop different services within the same host
+
+-> Disadvantages
+
+    - Complexity
+    - Increased administrative overhead
+    - The host can switch services ports or the ip within that network and a rule that once worked for blocking a particular service, no longer works or becomes useless
+
+![firewall status](task3-fw/firewall-status.png)
+- When checking the logs in status > system logs > firewall we cann see the previous activity
+- It says the time that it occured
+- it mentions the description of the rule we implemented (if you remember, above we put the description of the rule as "No more facebook!!")
+- It says the source, either the ip and the port
+- It says the destination, either ip and port
+- The protocol is TCP
+
+![firewall schedule](task3-fw/shcedule-firewall.png)
+- We went into firewall > Schedules
+  
+![Schedule facebook block](task3-fw/schedule-facebook-block.png)
+![Schedule setting ranges](task3-fw/configured-ranges.png)
+![Schedule after save](task3-fw/range-after-save.png)
+- We gave a schedule name
+- We gave a description
+- We selected all the days, by selecting the header of the callendar which removes the month restriction
+- We selected the time that was asked (10am to 4pm)
+- We also have a time range description
+- After all that we clicked uppon the "add time", which added it into the configured ranges like you see in the secound image
+- We saved and the rule appears clearly in the third picture
+
+![Apply Schedule rule](task3-fw/apply-schedule-rule.png)
+- We went into firewall > rules > edit button (of the rule we created before)
+- Scrolled down into extra options
+- Selected "Display advanced"
+- Scrolled down once again to find Schedule field
+- Select the schedule rule we created before
+- We saved and applyied the changes
+
+![After save](task3-fw/after-save-schedule-firewall-rule.png)
+- As you can see after saving the rule appears in the Schedule header
+
+
+![No work hours](task3-fw/schedule-no-work-facebook.png)
+- We changed the range to 5pm to 9pm
+- Since at the time it is 7pm, it did not work
+
+![Scheduled works facebook](task3-fw/facebook-works-scheduled.png)
+- We changed the range to 9am to 11am
+- Since at the time it is 7pm, it did work
+
+![Scheduled logs](task3-fw/logs-schedule.png)
+- Despite the rule making effect or not, the rules still pass by even if the action does not take effect as you can see
