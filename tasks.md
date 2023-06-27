@@ -509,3 +509,76 @@ we got another 30% denied
 If we check out the wireshark
 ![Retransmission not answered](task3-fw/retransmission-requests.png)
 We can see that the host is asking for retransmission and is getting no response at all from the server.. which means that the pfsense firewall is not rejecting but blocking the communications because it does not even response back
+
+Speaking about logs, it is more of the same.. the ip address went back to the forbidden list of the virusprot and we can see more logs acusing that this precise ip address is trying to connect but with no acomplishments, the only difference is that it accuses that the ip address is already on the forbidden list
+![Forbidden](task3-fw/table-viruspot.png)
+
+![Dashboard widgets](task3-fw/dashboard-widgets.png)
+In this picture we can see that the dashboard has several widgets for surveillance operations
+# TASK 5/4 - NIDS (basic)
+
+# TASK 5.1/4.1 - Setup Suricata
+![Suricata](task4-NIDS/suricata.png)
+Install the suricata going to the package manager
+
+# Configure suricata
+We went into Services > Suricata > Global Settings
+
+-> After that we selected the ETOpen Emerging threat rules (the default opt)
+
+-> We also selected "Install Snort Rules", the default option which needed a registry for free. After the registration we extracted the OinkCode under the left menu tab.
+
+![Snort registry](task4-NIDS/oink-code.png)
+
+![Global Settings final](task4-NIDS/global-settings5.png)
+- It will end up like this
+- We should put the name of a certain file present in the snort website files.. The first file that we encounter was the snort v3, which name is snort3-community-rules.tar.gz
+- Also we need to place the snort code
+![Global Settings final 2](task4-NIDS/snort-code.png)
+
+-> Now we move into the Rules Update settings which we should mark the GeoLite2 DB Update option, which is for ip databases to know the countrys. In order to use it we also need to register and get the licence key under the licenses menu
+
+![License](task4-NIDS/global-settings7.png)
+
+-> We should place this license key
+
+![License](task4-NIDS/global-settings8.png)
+- The update interval also should be 7 days, which is acceptable
+
+-> Also we need to put to remove the blocked hosts after 15 minutes
+
+![Blocked hosts](task4-NIDS/global-settings4.png.png)
+
+-> After we need to go to the update tab and click in the update button. If all is setted corretly, we should have a menu like this at the final
+![Final rules](task4-NIDS/update-rules.png)
+
+After setting the global settings, we can now go into the the interfaces, where we should select both interfaces with the following options in order to track them:
+
+![Json suricata](task4-NIDS/json-suricata.png)
+- Put suricata to allow json, because the format itself helps to track the logs and information to side applications
+
+![Block offenders](task4-NIDS/block-offender-suricata.png)
+- Allow to block ofenders should be marked as well, the time which they stay blocked got setted before in the global setting
+
+![High profile performance and detect](task4-NIDS/Detect-engine-profile-suricata.png)
+- Put the profile as high to reach the higgest performance
+
+-> We should go to the tab "WAN Categories"
+![Select rules](task4-NIDS/snort-rulesç.png)
+- Select all rules, since it is advisable to do so. Here we will select all the rules for snort and also for the ETOpen
+
+![Select flowbits opt](task4-NIDS/check-resolve-flowbits.png)
+- Check this for reduce false positive alerts
+- Dont forget to save all
+
+-> Go to the rules section tab
+
+![Check the rules](task4-NIDS/rules-tab-suricata.png)
+- Those are the rules that are setted, we can see all their state, the rules itself and also the message that will display after some of those rules match
+- Select and enable all
+
+![Wan rep](task4-NIDS/wan-rep.png)
+- Unmark the enable option, so it uses his only one reputation list
+
+![Services ips](task4-NIDS/services-ips.png)
+- This is a section that you can sogregate logs into certain services in order to make the logs more readable
