@@ -384,7 +384,7 @@ In pfsense we can limit the trafic to a single host instead of the whole network
 - It says the source, either the ip and the port
 - It says the destination, either ip and port
 - The protocol is TCP
-
+# Scheduling Rules
 ![firewall schedule](task3-fw/shcedule-firewall.png)
 - We went into firewall > Schedules
   
@@ -421,3 +421,91 @@ In pfsense we can limit the trafic to a single host instead of the whole network
 
 ![Scheduled logs](task3-fw/logs-schedule.png)
 - Despite the rule making effect or not, the rules still pass by even if the action does not take effect as you can see
+  
+# Web Server Public
+In this section we went into the port forwarding section by going Firewall -> Nat. After entering we applied the following rules like suggested in the description of the task: (Know that we enabled the httpd service in the centOS image, which is one of the internal network participants)
+![Port forwaring](task3-fw/port-forwarding.png)
+- The interface is WAN.
+- The protocol is TCP.
+- Destination is WAN address.
+- Destination port range is 80
+- Redirect target ip is single host and the ip address is the ipv4 of the centOS image ("192.168.2.2").
+- Redirect target port is 80.
+- Filter rule association is "Add associated filter rule", which makes everything for us.
+
+Unfortunely, even after configuring it like this, we were not able to access this web page from the exterior.. after further look ups we founded that our firewall was denying it as you can see in the logs:
+![Portforwaring denying](task3-fw/port-forwarding-firewall.png)
+
+In order to solve this, we went to the firewall rules relative to the WAN and enabled every single connection, from anywhere to the port 80 of the WAN interface. This way we finally got the intended result
+
+![Ip forwaring solved](task3-fw/ip-forwarding-solved.png)
+![Ip forwarding success](task3-fw/ip-forwaring-success.png)
+
+As you can see, i got the intended result which is the access to the internal network by the WAN network, which forwards all the trafic to the internal network using the public ip address "192.168.1.143:80". Note that i connected to it by my host machine.
+
+# Limit Number of Connections
+In regular operation we should not have more than twenty connections requests per secound.
+
+Denote that in this part of the tutorial and since i changed my wifi, the dhcp created a new ip address. Instead of the 192.168.1.143, i am now with a ip address 192.168.0.180.
+
+To simulate a DDOS attack, we used a tool called nping. The command is as follows:
+```
+sudo nping -tcp-connect -p 80 -rate=20 -c 40 192.168.0.180
+``` 
+- "-tcp-connect" stands for a tcp connection
+- "-p" stands for a port
+- "-rate" is the number of packages per secound we are sending
+- "-c" is the number of requests we will produce
+- Finally we put the ip address that we are making this request against
+
+This is what came from the wireshark:
+![nping](task3-fw/nping.png)
+- We can see that the trafic got completely full of this requests
+- There were cases of duplication of packets
+- Retransmissions also happend
+- There are no signals of failure, which we will see in the output of the console
+
+![nping console result](task3-fw/nping-cmd.png)
+- Max rtt was 2.115ms
+- Min rtt was 0.740ms
+- Avg rtt was 1.480ms
+- From 40 attemps 0 failed
+
+For testing purposes, we tryied to somehow make requests fail.. By testing a bunch of combinations we did this one and founded more or less a minimum combination to make some connections fail
+
+![Trying to reach fail](task3-fw/Trying-to-reach-limit.png)
+```
+sudo nping -tcp-connect -p 80 -rate=100 -c 350 192.168.0.180
+```
+As you can see to reach a fail we both increase the number of requests per secound with "-rate" flag and also increased the number of connections with "-c". The rate got increase from 20 to 100, and the number of connections increased from 40 to 350.
+
+![COnfigure rule](task3-fw/configuring-rule-connections-per-secound.png)
+As instructed we went into the WAN rule, responsible for allowing the connections to the page and changed to a max of 20 requests per secound
+
+Now to check the effects, we will run a command as so:
+```
+sudo nping -tcp-connect -p 80 -rate=30 -c 30 192.168.0.180
+```
+![Not full-fill connections](task3-fw/not-full-fill-connections.png)
+As you can see now 30% of the requests were not full-filled
+
+![VirusProt](task3-fw/virusprot.png)
+If we look into the firewall logs, we can see that a rule called "virusprot" taked place.
+
+![VirusProt table](task3-fw/virus-prot-table.png)
+As mentioned what the rule does is to put the ip address that violated the rule into a forbidden ip address table as you can see here in the Diagnostics > Tables and virusprot opt
+
+![Without crossing the boundaries](task3-fw/no-boundaries-crossed.png)
+Without crossing the boundaries (using 10 requests per secound with 30 attemps, we see that every request is settled)
+
+![Crossing boundaries](task3-fw/crossing-boundaries.png)
+When we cross boundaries, as you can see we get denied in some point.
+This time the command we used was:
+```
+sudo nping -tcp-connect -p 80 -rate=100 -c 30 192.168.0.180
+```
+we got another 30% denied
+
+If we check out the wireshark
+![Retransmission not answered](task3-fw/retransmission-requests.png)
+We can see that the host is asking for retransmission and is getting no response at all from the server.. which means that the pfsense firewall is not rejecting but blocking the communications because it does not even response back
