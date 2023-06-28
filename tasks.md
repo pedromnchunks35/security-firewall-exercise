@@ -582,3 +582,23 @@ After setting the global settings, we can now go into the the interfaces, where 
 
 ![Services ips](task4-NIDS/services-ips.png)
 - This is a section that you can sogregate logs into certain services in order to make the logs more readable
+  
+-> After all this configuration we return to the interface tab and enable the configuration we just setted by clicking the blue arrow button
+![Enable monitoring](task4-NIDS/enable-monitoring.png)
+
+# Testing and fine tuning Suricata
+![Suricata logs](task4-NIDS/suricata-logs.png)
+- These are the suricata alerts, that you can see in the Service > Suricata > Alerts
+
+-> Since every ip address was getting blocked.. because of the "Block Offenders option", we will just search all over the logs and after than unmark that option and see other kind of logs.. (even google is getting blocked)
+![Alerts](task4-NIDS/suricata-block.png)
+The different Description of the alert are:
+
+|PROTOCOL|PRIORITY|DESCRIPTION|MEANING|THREATS
+|--|--|--|--|--|
+|UDP|3|Suricata UDPv4 invalid checksum|It means that the expected checksum present in the header does not match the true one, which means that the data may have be modified|*Network Anomalies<br> *Misconfigured network devices<br> *Malicious Activity  |
+|IGMP|3|POLICY-OTHER IP option strict source routing attempt|This means that there was a attempt to access a certain resource using a strict list of ip addresses, which is highly not recommended (maybe because of the update package try that we did previously)|*IP Spoofing<br> *Network Reconnaissance<br> *Trafic Redirection|
+|ICMP|3|Potocol-ICMP Echo Reply|This alert goes on when there is a unexpected behavior on doing echo|*ICMP-based Attacks<br> *Network Reconnaissance <br> *Covert Communication|
+|TCP|3|SURICATA STREAM TIMEWAIT ACK with wrong seq|This alert happens when we receive a unexpected packet sequence, which can point to a potencial irregularitie or anomalie|*TCP Sequence Number Manipulation<br> *TCP Hijacking or Spoofing <br> *Man-in-the-Middle Attack|
+|TCP|3|SURICATA STREAM Packet with invalid timestamp|A packet with invalid timestamp was detected, this normally is used to ensure order in the packets, having a invalid timestamp can indicate possible issues| *Network Timestamp Manipulation <br> *Replay Attacks <br> *Network Performance or Sync Issues|
+- All of those alerts are not real threats, but the problem is that they can actually be a threat. 
