@@ -602,3 +602,40 @@ The different Description of the alert are:
 |TCP|3|SURICATA STREAM TIMEWAIT ACK with wrong seq|This alert happens when we receive a unexpected packet sequence, which can point to a potencial irregularitie or anomalie|*TCP Sequence Number Manipulation<br> *TCP Hijacking or Spoofing <br> *Man-in-the-Middle Attack|
 |TCP|3|SURICATA STREAM Packet with invalid timestamp|A packet with invalid timestamp was detected, this normally is used to ensure order in the packets, having a invalid timestamp can indicate possible issues| *Network Timestamp Manipulation <br> *Replay Attacks <br> *Network Performance or Sync Issues|
 - All of those alerts are not real threats, but the problem is that they can actually be a threat. 
+
+-> Since we do not have the same alerts as the statement, we did the track by dst_IP
+
+-> We went into the surpress list and this was the disposition of the rules we just set
+
+![Supress](task4-NIDS/supress-list.png)
+
+We also have access to this list in the interface section under "Alert Suppressing and Filtering"
+
+![Supress2](task4-NIDS/surpress-list-interface.png)
+
+-> We will remove the secound entry
+
+![Secound Entry Removed](task4-NIDS/secound-entry-removed.png)
+
+-> After this there is only one rule taking place
+# 6 Tasks - NIDS (advanced)
+For this referement, we will contruct a dashboard as so:
+![Request dashboard](task6-NIDS(advanced)/requested-dashboard.png)
+- Every information is oriented to LAN
+- We are using the following widgets as requested: System Information,Interfaces,Traffic Graphs and Security Alerts.
+
+Denote that we do not work with kali.. we instead have black arch linux because why not.
+
+![nmap scan](task6-NIDS(advanced)/nmap-scan.png)
+After running "nmap -PS -v 192.168.2.3", there wasnt any kind of effect
+
+![pfsense sshd](task6-NIDS(advanced)/pfsense-sshd.png)
+We entered the pfsense terminal by ssh. To do so we needed to enable the sshd service of pfsense and also allow the ssh to take place in the firewall rules.
+
+![suricata rules](task6-NIDS(advanced)/suricata-files-pfsense.png)
+For checking the reason why we do not have any kind of logs in the suricata alerts, we went into the emerging-scan.rules
+
+![Suricata more rules](task6-NIDS(advanced)/pf-sense-rules.png)
+
+![Suricata rules](task6-NIDS(advanced)/ftp-gather-rules.png)
+To help us achieve the desired observation, we used ftp and retrieved the rules to the host machine for further observation.
