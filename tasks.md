@@ -639,3 +639,176 @@ For checking the reason why we do not have any kind of logs in the suricata aler
 
 ![Suricata rules](task6-NIDS(advanced)/ftp-gather-rules.png)
 To help us achieve the desired observation, we used ftp and retrieved the rules to the host machine for further observation.
+
+![Rules](task6-NIDS(advanced)/rules-suricata.png)
+- As you can see here we have a lot of rules, where some of them are commented and others not
+  
+Relative to nmap previous command:
+
+-It relies in TCP protocol which normally is a protocol that we cannot extinguish, otherwise we would be full of false positives or rejecting normal connections to some of the services we have.
+- This command has the aim for port discovery, service discovery or even host verifying. In the host veryfing dimension, sometimes is beneficial to use it over using ICMP protocol because it is more undetectable.
+- Because we do not specify ports, the nmap searches all over the 1000 TOP ports, which atleast with me wouldn't be good for those that are inspecting because i normally use uncommon ports :P
+- Also, this just sends a TCP ACK, without doing any kind of handshake. We may want to add a rule that captures this pattern but first we need to understand the syntax of the file.
+  
+Syntax:
+```
+alert tcp any any -> $HOME_NET any (msg:"ET SCAN Nmap NSE Heartbleed Request"; flow:established,to_server; content:"|18 03|"; depth:2; byte_test:1,<,4,2; content:"|01|"; offset:5; depth:1; byte_test:2,>,2,3; byte_test:2,>,200,6; content:"|40 00|Nmap ssl-heartbleed"; fast_pattern; classtype:attempted-recon; sid:2021023; rev:2; metadata:created_at 2015_04_28, updated_at 2022_03_17;)
+```
+
+- "alert", is to let it know it is meant to throw a alert
+- "tcp", is the protocol
+- The first "any", is to meantion the source of the connection (the port is included)
+- Secound "any", means the destiny (port included)
+- "$HOME_NET" is the network that is beeing protected by the IDS/IPS
+- "msg" is the message we will see when the pattern matches
+- After these, there are a bunch of options we can refer to the pattern..
+- "flow:established,to_server", which targets already established connections
+- "content:"|18 03|"; depth:2;", content pattern of the payload "18 03, depth 2 bytes"
+- "byte_test:1,<,4,2", byte comparations, it checks if in the first byte tha value is less than 4.
+- "content: "|40 00| Nmap ssl-heartbleed;fast_pattern;",it is to find a pattern of that content in the payload, also it as "fast_pattern" which means that this pattern should be checked fast
+- "classtype:attempted-recon;", the type of the allert
+- "sid:2021023", is the unique identifier of the rule
+- "rev:2;", revision number of the rule, we can see if it got changed by this number
+- "metadata:created_at 2015_04_28, updated_at_2022_03_17", it is metadata about the rule, saying their update and insertion.
+
+Common special attributed used for reaching patterns:
+- "nocase", matching case-insentitive, allowing matches regardless of letter casing
+- "depth", the numnber of bytes we should look into
+- "offset", the amout of bytes it skips for searching
+- "distance", distance from the previous match we should try to match
+- "within", range of bytes where the search should take place
+- etc...
+  
+Format of the rules:
+- Action 
+  ```
+    alert - generate an alert
+    pass - stop further inspection of the packet
+    drop - drop packet and generate alert
+    reject - send RST/ICMP unreach error to the sender of the matching packet.
+    rejectsrc - same as just reject
+    rejectdst - send RST/ICMP error packet to receiver of the matching packet.
+    rejectboth - send RST/ICMP error packets to both sides of the conversation.
+  ```
+- Protocol
+  ```
+    tcp (for tcp-traffic)
+    udp
+    icmp
+    ip (ip stands for ‘all’ or ‘any’)
+    http
+    ftp
+    tls (this includes ssl)
+    smb
+    dns
+    dcerpc
+    ssh
+    smtp
+    imap
+    modbus (disabled by default)
+    dnp3 (disabled by default)
+    enip (disabled by default)
+    nfs
+    ikev2
+    krb5
+    ntp
+    dhcp
+    rfb
+    rdp
+    snmp
+    tftp
+    sip
+    http2
+  ```
+- Source and destination
+  (*** ***), is for selection of the pattern
+  ```
+  drop tcp ***$HOME_NET*** any -> ***$EXTERNAL_NET*** any
+  ```
+- Ports
+  (*** ***), is for selection of the pattern
+  ```
+  drop tcp $HOME_NET ***any*** -> $EXTERNAL_NET ***any*** 
+  ```
+- Direction
+  ```
+  source -> destination
+  source <> destination  (both directions)
+  ```
+- Rule Options
+  ```
+  <keyword>: <settings>;
+  <keyword>;
+  ```
+
+With this in mind we copyied the rule that we just created and pasted it inside of the emerging-scan.rules
+![Paste result](task6-NIDS(advanced)/paste-result.png)
+- As you can see we pasted the created rule inside of emergin-scan.rules
+- We also after it we restarted the suricata service
+
+For showing that rule changing is working we created a simple rule as so:
+```
+alert tcp any any -> any any (msg:"Just a quick test banobo";sid:696969;rev1;)
+```
+![Banobo](task6-NIDS(advanced)/banobo-alert.png)
+- As you can when we do the request with nmap we got logs such those
+
+![Wireshark nmap](task6-NIDS(advanced)/wireshark-nmap.png)
+- This is the network activity when i invoke the nmap -PS command
+
+To make nmap throw a suricata alert, we should add a new rule or change any rule. The most simpliest pattern would be having a tcp connection simply but we want also the pattern that says that it does not do the handshake
+```
+alert tcp any any -> any any (msg:"Nmap TCP SYN Ping detected"; flags:S; threshold: type both, track by_src, count 10, seconds 10; sid:6969696; rev:1;)
+```
+![Working ruke](task6-NIDS(advanced)/rule-working.png)
+
+![Popts](task6-NIDS(advanced)/Popts.png)
+- These is the different -P options that we may explore
+
+![nmap -PA](task6-NIDS(advanced)/nmap-PA.png)
+- Instead of TCP SYN Ping Scans, this command sends a TCP ACK scan.
+- It needs more resources
+  
+Note that the difference between the 2 is that after the SYN, the first still sends a SYN and the secound sends a ACK
+
+![nmap PU](task6-NIDS(advanced)/PU.png)
+- this is the result of nmap -PU
+- It should send UDP packets to a list of given ports
+- We only see TCP trafic because there are no udp services
+
+![nmap PO](task6-NIDS(advanced)/PO.png)
+- This is the nmap PO
+
+![nmap PR](task6-NIDS(advanced)/PR.png)
+- This is the nmap PR
+
+![nmap SS](tasks6/../task6-NIDS(advanced)/SS.png)
+- This is the nmap sS, it is the most common port scanning
+- In terms of alerts, not a single one got thrown
+- It scanned every service the machine has
+- It searched like the ones in every port but nothing particulary different
+- It does the same, sens a TCP ACK for the host, the host answers and it answers back with a RST flag
+  
+![nmap SX](task6-NIDS(advanced)/xd.png)
+- The same as the others
+- The difference is that it sends TCP packets which flags are PSH,FIN and URG
+
+![nmap SF](task6-NIDS(advanced)/SF.png)
+- Same as the others but the flag is set to SF
+
+![nmap A](task6-NIDS(advanced)/nmapA.png)
+- nmap A
+- This makes a full scan to the system
+
+![flood](task6-NIDS(advanced)/flood.png)
+- In this iteration we used the hping command "hping3 -S flood"
+- THe first 2 trys it crashed so we did the command just for a cople secounds to make sure it does not make the pc crash once again
+- We got a lot of pressure over the resources and those were the alerts provided by the suricata (every thing is turned on in the rules session)
+- This is a replication of what it is a DDOS
+
+![flood 2](task6-NIDS(advanced)/flood2.png)
+- We used the secound command over the server
+- It did almost the same but throw some different allerts over it
+- Those alerts are all about emerging-drop.rules
+- These rules are more to prevent attacks that actually motinor them
+- In this secound command the source of the attack is random because of the -rand-source
